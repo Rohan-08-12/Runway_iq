@@ -105,12 +105,12 @@ router.post('/', requireAuth, async (req, res, next) => {
 
 function computeSimRisk(runway, netBurn, grossMargin, revenueVol) {
   let score = 0
-  if (runway < 3) score += 40
-  else if (runway < 6) score += 25
-  else if (runway < 12) score += 10
-  if (netBurn > 0) score += 15
+  if (runway < 3) score += 25
+  else if (runway < 6) score += 15
+  else if (runway < 12) score += 8
+  if (netBurn > 0) score += 10
   if (grossMargin < 20) score += 15
-  else if (grossMargin < 40) score += 8
+  else if (grossMargin < 40) score += 10
   if (revenueVol > 0.5) score += 15
   else if (revenueVol > 0.3) score += 8
   return Math.min(100, score)
