@@ -10,7 +10,7 @@ const riskService = require('../services/riskService')
 const router = express.Router()
 
 const client = new Anthropic()
-const MODEL = 'claude-sonnet-4-20250514'
+const MODEL = 'claude-sonnet-4-6'
 
 /**
  * POST /api/chat
