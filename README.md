@@ -34,7 +34,7 @@ RunwayIQ connects to your transaction data, computes real-time financial metrics
 ### Backend
 - **Node.js** + **Express**
 - **Prisma ORM** + **Supabase (PostgreSQL)**
-- **Anthropic Claude** (`claude-opus-4-5`) — 3-agent pipeline
+- **Anthropic Claude** — `claude-haiku-4-5` (3-agent report pipeline), `claude-sonnet-4-6` (chat)
 - **Multer** (CSV upload), **Zod** (validation)
 - **Helmet** + **express-rate-limit** (security)
 
@@ -123,6 +123,12 @@ RUNWAYIQ/
 
 ---
 
+## Documentation
+
+Deeper docs live in [`/docs`](./docs): [setup & troubleshooting](./docs/SETUP.md), [architecture](./docs/ARCHITECTURE.md), and [deployment](./docs/DEPLOYMENT.md). API reference is in [`backend/README.md`](./backend/README.md#api-endpoints).
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -144,7 +150,7 @@ cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Create `backend/.env` (copy `backend/.env.example` and fill in):
 
 ```env
 DATABASE_URL=your_supabase_postgres_connection_string
@@ -154,18 +160,22 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 FRONTEND_ORIGIN=http://localhost:5173
 PORT=3000
 NODE_ENV=development
+BUSINESS_ID=demo-business-id
+DEMO_USER_ID=00000000-0000-0000-0000-000000000001
 ```
 
-Push the database schema:
+> See [`docs/SETUP.md`](./docs/SETUP.md) for where to find each Supabase value and how to link seeded demo data to a real account.
+
+Push the database schema (no migration files — this project uses `db push`):
 
 ```bash
-npx prisma db push
+npm run db:push
 ```
 
-(Optional) Seed demo data:
+(Optional) Seed 6 months of demo data:
 
 ```bash
-node seed/seed.js
+npm run db:seed
 ```
 
 Start the backend:
@@ -182,7 +192,7 @@ cd RunwayIq
 npm install
 ```
 
-Create `RunwayIq/.env.local`:
+Create `RunwayIq/.env` (copy `RunwayIq/.env.example` and fill in):
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
