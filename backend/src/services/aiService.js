@@ -8,7 +8,7 @@ const riskService = require('./riskService')
 
 
 const client = new Anthropic()
-const MODEL = 'claude-opus-4-5'
+const MODEL = 'claude-haiku-4-5'
 
 // Strip markdown code fences that Claude sometimes adds despite instructions
 function parseClaudeJSON(text) {
