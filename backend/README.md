@@ -131,9 +131,21 @@ All protected routes return `401` if no token is provided and `403` if the token
 | `GET` | `/api/risk` | ✓ | 200/15min | Risk score + named drivers |
 | `POST` | `/api/report/generate` | ✓ | **5/hr/user** | Run 3-agent pipeline, save + return report |
 | `GET` | `/api/report/latest` | ✓ | 200/15min | Retrieve most recent report |
+| `GET` | `/api/businesses` | ✓ | 200/15min | List businesses owned by the authenticated user |
+| `POST` | `/api/businesses` | ✓ | 200/15min | Create a new business for the authenticated user |
+| `PATCH` | `/api/businesses/current` | ✓ | 200/15min | Update `name` / `cashOnHand`; recomputes snapshots if cash changes |
+| `POST` | `/api/simulate` | ✓ | 200/15min | What-if OPEX cut / revenue target — in-memory only, no DB writes |
+| `POST` | `/api/chat` | ✓ | 200/15min | Ask Your CFO — conversational Q&A grounded in live financial data |
+| `GET` | `/api/chat/history` | ✓ | 200/15min | Last 50 chat messages for the business |
 | `GET` | `/health` | — | — | Health check |
 
-> **Out of scope for v1:** `/api/chat` (conversational follow-up) and `/api/whatif` (scenario modelling) are planned features not yet implemented.
+### `POST /api/simulate`
+
+Body: `{ opexCutPercent: number (0-100), revenueTarget?: number (dollars) }`. Reads the latest `MonthlySnapshot` and `Business.cashOnHand`, re-derives runway/burn/risk under the hypothetical, and returns `{ current, simulated, delta }`. Nothing is persisted — safe to call repeatedly while a user drags a slider.
+
+### `POST /api/chat`
+
+Body: `{ message: string (max 2000 chars), conversationHistory?: [{role, content}], saveHistory?: boolean (default true) }`. Builds a live financial context string (revenue, margin, burn, runway, risk, forecast) and sends it as the system prompt alongside the conversation history to `claude-sonnet-4-6`. Persists both the user message and reply to `ChatMessage` unless `saveHistory: false`. Returns `{ reply, conversationHistory }`.
 
 ### `GET /api/forecast` — query params
 
@@ -172,7 +184,7 @@ date, amount, direction, category, description, merchant_name
 
 ## 3-Agent Claude pipeline
 
-`POST /api/report/generate` triggers three sequential Claude calls using `claude-sonnet-4-20250514`.
+`POST /api/report/generate` triggers three sequential Claude calls using `claude-haiku-4-5` — chosen for cost/latency since each agent's task is bounded (structured JSON extraction against explicit rules), not open-ended reasoning. (Note: `/api/chat` uses a different model — `claude-sonnet-4-6` — since conversational Q&A benefits from more headroom.)
 
 ### Agent 1 — Problem Identifier
 
