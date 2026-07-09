@@ -1,5 +1,10 @@
 require('dotenv').config()
+const fs = require('fs')
+const path = require('path')
 const express = require('express')
+
+// Ensure upload directory exists
+fs.mkdirSync(path.join(__dirname, '../uploads'), { recursive: true })
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
