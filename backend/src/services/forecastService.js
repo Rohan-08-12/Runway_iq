@@ -7,11 +7,11 @@ const prisma = require('../lib/prisma')
  * Uses the last 6 months of snapshot revenue to project forward.
  */
 async function getLinearForecast(businessId, months = 3) {
-  const snapshots = await prisma.monthlySnapshot.findMany({
+  const snapshots = (await prisma.monthlySnapshot.findMany({
     where: { businessId },
-    orderBy: { month: 'asc' },
+    orderBy: { month: 'desc' },
     take: 6,
-  })
+  })).reverse()
 
   if (snapshots.length === 0) return []
 
