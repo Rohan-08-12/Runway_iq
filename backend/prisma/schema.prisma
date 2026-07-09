@@ -60,6 +60,8 @@ model MonthlySnapshot {
   expenseVol  Float    @default(0)
   computedAt  DateTime @default(now())
   business    Business @relation(fields: [businessId], references: [id])
+
+  @@unique([businessId, month])
 }
 
 model AIReport {

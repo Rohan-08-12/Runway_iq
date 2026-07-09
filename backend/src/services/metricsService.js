@@ -65,7 +65,7 @@ async function computeAndStoreSnapshots(businessId) {
     ? monthsWithBurn.slice(-6).reduce((sum, s) => sum + s.opex + s.cogs, 0) / Math.min(6, monthsWithBurn.length)
     : 0
 
-  // Upsert snapshots
+  // Upsert snapshots using the compound unique [businessId, month]
   const business = await prisma.business.findUnique({ where: { id: businessId } })
   for (const s of withVol) {
     const effectiveBurn = s.burnRate > 0 ? s.burnRate : trailingBurn
@@ -73,14 +73,9 @@ async function computeAndStoreSnapshots(businessId) {
       ? (business.cashOnHand / effectiveBurn)
       : 0
 
+    const monthDate = new Date(`${s.key}-01`)
     await prisma.monthlySnapshot.upsert({
-      where: {
-        // compound unique not defined in schema; use findFirst + create pattern
-        id: (await prisma.monthlySnapshot.findFirst({
-          where: { businessId, month: new Date(`${s.key}-01`) },
-          select: { id: true },
-        }))?.id || 'new',
-      },
+      where: { businessId_month: { businessId, month: monthDate } },
       update: {
         revenue: s.revenue, cogs: s.cogs, opex: s.opex,
         grossProfit: s.grossProfit, grossMargin: s.grossMargin,
@@ -90,7 +85,7 @@ async function computeAndStoreSnapshots(businessId) {
       },
       create: {
         businessId,
-        month: new Date(`${s.key}-01`),
+        month: monthDate,
         revenue: s.revenue, cogs: s.cogs, opex: s.opex,
         grossProfit: s.grossProfit, grossMargin: s.grossMargin,
         netBurn: s.netBurn, burnRate: effectiveBurn, runway,
