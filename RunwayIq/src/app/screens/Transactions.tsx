@@ -45,7 +45,7 @@ export function Transactions() {
   const totalOut = transactions.filter(t => t.direction === 'outflow').reduce((s, t) => s + t.amount, 0);
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-[1440px] mx-auto space-y-4">
 
       {/* Header */}
       <div className="mb-2">
@@ -58,7 +58,7 @@ export function Transactions() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Total Inflows',  value: `+${fmtMoney(totalIn)}`,          color: '#059669' },
           { label: 'Total Outflows', value: `-${fmtMoney(totalOut)}`,          color: '#E24B4A' },

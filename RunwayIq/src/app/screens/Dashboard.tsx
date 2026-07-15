@@ -250,17 +250,17 @@ export function Dashboard() {
   const riskLabel = risk?.label ?? 'unknown';
 
   return (
-    <div className="p-5 max-w-[1440px] mx-auto space-y-4">
+    <div className="p-4 md:p-5 max-w-[1440px] mx-auto space-y-4">
       {/* ── Page header ───────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-[11px]" style={{ color: '#9CA3AF' }}>
           <span className="text-[#1A56DB]" style={{ fontWeight: 600 }}>RunwayIQ</span>
           <span>/</span>
-          <span>Businesses</span>
-          <span>/</span>
+          <span className="hidden sm:inline">Businesses</span>
+          <span className="hidden sm:inline">/</span>
           <span style={{ color: '#374151', fontWeight: 500 }}>{business?.name ?? '…'}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {uploadMsg && (
             <span className="text-[10px]" style={{ color: uploadMsg.type === 'success' ? '#059669' : '#E24B4A' }}>
               {uploadMsg.text}
@@ -293,7 +293,7 @@ export function Dashboard() {
       </div>
 
       {/* ── KPI Row ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPI
           label="Monthly Revenue"
           value={loading ? '…' : fmtMoney(latest?.revenue ?? 0)}
@@ -331,10 +331,10 @@ export function Dashboard() {
 
       {/* ── Cash Balance Prompt ───────────────────────────────────────────── */}
       {!loading && business && !cashDismissed && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border"
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-[10px] border"
           style={{ backgroundColor: '#FFFBEB', borderColor: '#FCD34D' }}>
           <span className="text-[13px]">💰</span>
-          <div className="flex-1">
+          <div className="flex-1 min-w-[200px]">
             <span className="text-[11px]" style={{ color: '#92400E', fontWeight: 600 }}>
               Set your current cash balance to calculate runway
             </span>
@@ -342,7 +342,7 @@ export function Dashboard() {
               Runway = Cash on hand ÷ monthly burn rate
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               type="text"
               value={cashInput}
@@ -371,7 +371,7 @@ export function Dashboard() {
       )}
 
       {/* ── Revenue vs Burn + Risk ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-[2fr_1fr] gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3">
         {/* Left: chart + forecast cards */}
         <Card>
           <SectionLabel>Revenue vs Burn</SectionLabel>
@@ -396,7 +396,7 @@ export function Dashboard() {
 
           {/* 3 forecast mini-cards */}
           {forecast.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
               {forecast.map((fc) => {
                 const label = new Date(fc.month).toLocaleString('default', { month: 'short' });
                 const prevRev = latest?.revenue ?? 0;
@@ -447,7 +447,7 @@ export function Dashboard() {
       {/* ── What-If Simulator ─────────────────────────────────────────────── */}
       <Card>
         <SectionLabel badge="NEW">What-If Simulator</SectionLabel>
-        <div className="flex items-center gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8">
           {/* Sliders */}
           <div className="flex-1 space-y-4">
             <SliderRow
@@ -466,7 +466,7 @@ export function Dashboard() {
             />
           </div>
           {/* Results */}
-          <div className="flex items-center gap-6 shrink-0 pl-6 border-l border-[#F3F4F6]">
+          <div className="flex flex-wrap items-center gap-6 shrink-0 lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-[#F3F4F6]">
             {[
               { label: 'New runway',  value: simulate?.simulated.runway != null ? fmtRunway(simulate.simulated.runway) : '—', color: '#059669' },
               { label: 'Risk score',  value: simulate?.simulated.riskScore != null ? String(simulate.simulated.riskScore) : '—', color: '#D97706' },
@@ -487,8 +487,8 @@ export function Dashboard() {
 
       {/* ── Agent Pipeline ────────────────────────────────────────────────── */}
       <Card className="py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {['Analyst', 'KB retrieval', 'Strategist', 'CFO writer'].map((step, i, arr) => (
               <div key={step} className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
@@ -514,7 +514,7 @@ export function Dashboard() {
       </Card>
 
       {/* ── Agent Detail Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-[1fr_2fr_1fr] gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-3">
 
         {/* Agent 1 — Analyst */}
         <Card className="border-l-[3px] border-l-[#1A56DB]">
@@ -598,7 +598,7 @@ export function Dashboard() {
 
       {/* ── AI CFO Report ─────────────────────────────────────────────────── */}
       <Card>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
           <span className="text-[10px] px-2 py-1 rounded-md"
             style={{ backgroundColor: '#EBF0FF', color: '#1A56DB', fontWeight: 600 }}>
             AI CFO Report
@@ -612,7 +612,7 @@ export function Dashboard() {
             style={{ backgroundColor: '#D1FAE5', color: '#059669', fontWeight: 700 }}>
             RAG-grounded
           </span>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             {report && (
               <button
                 onClick={handleDownloadPDF}
@@ -652,7 +652,7 @@ export function Dashboard() {
             <div className="text-[10px] mb-4 uppercase tracking-widest" style={{ color: '#9CA3AF', fontWeight: 700 }}>
               Recommended actions
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {report.actions.slice(0, 3).map((action, i) => (
                 <div key={i} className="p-4 rounded-lg border-[0.5px]"
                   style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' }}>

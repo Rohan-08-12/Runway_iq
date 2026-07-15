@@ -19,7 +19,7 @@ export function Layout() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <TopNav />
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto pb-16 md:pb-0">
           <Outlet context={{ dataVersion } satisfies LayoutContext} />
         </div>
       </div>

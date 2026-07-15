@@ -20,6 +20,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const body = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(body.error ?? `HTTP ${res.status}`)
   }
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -98,7 +99,9 @@ export interface Transaction {
 
 export interface SimulateParams {
   opexCutPercent: number
-  revenueTarget?: number  // dollars
+  revenueTarget?: number   // dollars
+  cogsCutPercent?: number
+  cashInfusion?: number    // dollars, one-time
 }
 
 export interface SimulateMetrics {
@@ -166,6 +169,12 @@ export interface Business {
   name: string
   cashOnHand: number
   createdAt: string
+  industry: string | null
+  fiscalYearStart: string | null
+  alertRunway: boolean
+  alertBurn: boolean
+  alertCash: boolean
+  alertRevenue: boolean
 }
 
 // ─── API methods ──────────────────────────────────────────────────────────────
@@ -201,12 +210,16 @@ export const api = {
   },
   businesses: {
     get: () => get<Business[]>('/businesses'),
-    update: (data: { name?: string; cashOnHand?: number }) =>
+    update: (data: {
+      name?: string; cashOnHand?: number; industry?: string; fiscalYearStart?: string
+      alertRunway?: boolean; alertBurn?: boolean; alertCash?: boolean; alertRevenue?: boolean
+    }) =>
       request<Business>('/businesses/current', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       }),
+    delete: () => request<void>('/businesses/current', { method: 'DELETE' }),
   },
   simulate: {
     run: (params: SimulateParams) => post<SimulateResponse>('/simulate', params),

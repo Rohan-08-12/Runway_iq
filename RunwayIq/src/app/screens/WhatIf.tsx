@@ -25,10 +25,15 @@ export function WhatIf() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       const currentRevDollars = metrics.latest!.revenue / 100;
-      const targetRevDollars = currentRevDollars * (1 + revenueGrowth / 100) + cashInfusion * 1000;
+      const targetRevDollars = currentRevDollars * (1 + revenueGrowth / 100);
       setSimLoading(true);
       api.simulate
-        .run({ opexCutPercent: opexCut, revenueTarget: targetRevDollars })
+        .run({
+          opexCutPercent: opexCut,
+          revenueTarget: targetRevDollars,
+          cogsCutPercent: cogsCut,
+          cashInfusion: cashInfusion * 1000,
+        })
         .then(setResult)
         .catch(() => null)
         .finally(() => setSimLoading(false));
@@ -51,7 +56,7 @@ export function WhatIf() {
   ] : [];
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-[1440px] mx-auto space-y-4">
       <div className="mb-6">
         <div className="text-[20px] mb-1" style={{ color: '#374151', fontWeight: 500 }}>
           What-If Simulator
@@ -61,7 +66,7 @@ export function WhatIf() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_1.6fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4">
         {/* Left Column: Controls */}
         <div className="space-y-4">
           {/* Sliders Card */}
@@ -104,7 +109,7 @@ export function WhatIf() {
         {/* Right Column: Results */}
         <div className="space-y-4">
           {/* KPI Results */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white border-[0.5px] border-[#E5E7EB] rounded-[10px] p-[14px]">
               <div className="text-[8px] uppercase mb-2" style={{ color: '#9CA3AF' }}>New Runway</div>
               {current && <div className="mb-1"><span className="text-[12px] line-through" style={{ color: '#9CA3AF' }}>{fmtRunway(current.runway)}</span></div>}

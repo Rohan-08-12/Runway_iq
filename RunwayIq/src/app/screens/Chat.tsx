@@ -57,10 +57,10 @@ export function Chat() {
   const latest = metrics?.latest;
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto h-[calc(100vh-44px)]">
-      <div className="grid grid-cols-[220px_1fr] gap-4 h-full">
+    <div className="p-4 md:p-6 max-w-[1440px] mx-auto lg:h-[calc(100vh-44px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 lg:h-full">
         {/* Left Panel */}
-        <div className="space-y-4">
+        <div className="space-y-4 order-2 lg:order-1">
           {/* Financial Context */}
           <div className="bg-white border-[0.5px] border-[#E5E7EB] rounded-[10px] p-[14px]">
             <div className="mb-3">
@@ -119,7 +119,7 @@ export function Chat() {
         </div>
 
         {/* Right Panel: Chat */}
-        <div className="bg-white border-[0.5px] border-[#E5E7EB] rounded-[10px] flex flex-col">
+        <div className="bg-white border-[0.5px] border-[#E5E7EB] rounded-[10px] flex flex-col order-1 lg:order-2 h-[75vh] lg:h-auto">
           {/* Header */}
           <div className="border-b border-[#E5E7EB] p-4">
             <div className="flex items-center gap-2">

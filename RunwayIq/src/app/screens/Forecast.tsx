@@ -36,7 +36,7 @@ export function Forecast() {
   const cashOutMonths = forecast.filter(f => f.cashOutRisk);
 
   return (
-    <div className="p-6 max-w-[1440px] mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-[1440px] mx-auto space-y-4">
       <div className="mb-6">
         <div className="text-[20px] mb-1" style={{ color: '#374151', fontWeight: 500 }}>
           Financial Forecast
@@ -58,7 +58,7 @@ export function Forecast() {
       ) : (
         <>
           {/* Month Cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {forecast.map(card => {
               const isDanger = card.cashOutRisk;
               const monthLabel = new Date(card.month).toLocaleString('default', { month: 'short', year: 'numeric' });
