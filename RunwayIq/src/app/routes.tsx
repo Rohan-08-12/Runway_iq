@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter, Navigate, useLocation } from 'react-router'
 import { Layout } from './components/Layout'
 import { Dashboard } from './screens/Dashboard'
 import { Forecast } from './screens/Forecast'
@@ -9,19 +9,23 @@ import { Settings } from './screens/Settings'
 import { Login } from './screens/Login'
 import { Landing } from './screens/Landing'
 import { useAuth } from '../contexts/AuthContext'
-import { ReactNode } from 'react'
 
-function RequireAuth({ children }: { children: ReactNode }) {
+// "/" is the landing page for logged-out visitors and the app shell for
+// logged-in users. Logged-out visits to deep app routes bounce back to "/".
+function RootGate() {
   const { session, loading } = useAuth()
+  const { pathname } = useLocation()
   if (loading) return null
-  if (!session) return <Navigate to="/landing" replace />
-  return <>{children}</>
+  if (session) return <Layout />
+  if (pathname !== '/') return <Navigate to="/" replace />
+  return <Landing />
 }
 
 export const router = createBrowserRouter([
   {
+    // Old bookmarked URL — keep it working
     path: '/landing',
-    Component: Landing,
+    element: <Navigate to="/" replace />,
   },
   {
     path: '/login',
@@ -29,11 +33,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: (
-      <RequireAuth>
-        <Layout />
-      </RequireAuth>
-    ),
+    element: <RootGate />,
     children: [
       { index: true, Component: Dashboard },
       { path: 'forecast', Component: Forecast },
