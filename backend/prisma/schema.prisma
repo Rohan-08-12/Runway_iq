@@ -8,15 +8,21 @@ datasource db {
 }
 
 model Business {
-  id           String            @id @default(uuid())
-  userId       String
-  name         String
-  cashOnHand   Int               @default(0)
-  createdAt    DateTime          @default(now())
-  transactions Transaction[]
-  snapshots    MonthlySnapshot[]
-  reports      AIReport[]
-  messages     ChatMessage[]
+  id              String            @id @default(uuid())
+  userId          String
+  name            String
+  cashOnHand      Int               @default(0)
+  industry        String?
+  fiscalYearStart String?
+  alertRunway     Boolean           @default(true)
+  alertBurn       Boolean           @default(true)
+  alertCash       Boolean           @default(false)
+  alertRevenue    Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  transactions    Transaction[]
+  snapshots       MonthlySnapshot[]
+  reports         AIReport[]
+  messages        ChatMessage[]
 
   @@index([userId])
 }
@@ -27,7 +33,7 @@ model ChatMessage {
   role       String   // "user" | "assistant"
   content    String
   createdAt  DateTime @default(now())
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model Transaction {
@@ -41,7 +47,7 @@ model Transaction {
   merchantName String?
   source       String   @default("csv")
   createdAt    DateTime @default(now())
-  business     Business @relation(fields: [businessId], references: [id])
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model MonthlySnapshot {
@@ -59,7 +65,7 @@ model MonthlySnapshot {
   revenueVol  Float    @default(0)
   expenseVol  Float    @default(0)
   computedAt  DateTime @default(now())
-  business    Business @relation(fields: [businessId], references: [id])
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, month])
 }
@@ -75,5 +81,5 @@ model AIReport {
   problems    Json     @default("[]")
   solutions   Json     @default("[]")
   createdAt   DateTime @default(now())
-  business    Business @relation(fields: [businessId], references: [id])
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }

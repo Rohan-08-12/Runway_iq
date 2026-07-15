@@ -13,6 +13,8 @@ const router = express.Router()
  *
  * Body:
  *   opexCutPercent  number  0-100  — how much to cut operating expenses by
+ *   cogsCutPercent  number  0-100  — how much to cut cost of goods sold by (optional)
+ *   cashInfusion    number         — one-time cash injection in dollars, extends runway only (optional)
  *   revenueTarget   number         — target monthly revenue in dollars (optional)
  *
  * Returns:
@@ -22,10 +24,12 @@ const router = express.Router()
  */
 router.post('/', requireAuth, async (req, res, next) => {
   try {
-    const { opexCutPercent = 0, revenueTarget } = req.body
+    const { opexCutPercent = 0, revenueTarget, cogsCutPercent = 0, cashInfusion = 0 } = req.body
 
     // Validate inputs
     const cut = Math.max(0, Math.min(100, Number(opexCutPercent) || 0))
+    const cogsCut = Math.max(0, Math.min(100, Number(cogsCutPercent) || 0))
+    const infusion = Math.max(0, Math.round((Number(cashInfusion) || 0) * 100)) // dollars -> cents
     const targetRevenue = revenueTarget
       ? Math.max(0, Math.round(Number(revenueTarget) * 100)) // convert to cents
       : null
@@ -56,19 +60,23 @@ router.post('/', requireAuth, async (req, res, next) => {
 
     // ── Simulated ─────────────────────────────────────────────────
     const simOpex = Math.round(baseOpex * (1 - cut / 100))
+    const simCogs = Math.round(baseCogs * (1 - cogsCut / 100))
     const simRevenue = targetRevenue !== null ? targetRevenue : baseRevenue
-    const simGrossProfit = simRevenue - baseCogs
+    const simGrossProfit = simRevenue - simCogs
     const simGrossMargin = simRevenue > 0 ? (simGrossProfit / simRevenue) * 100 : 0
-    const simNetBurn = simOpex + baseCogs - simRevenue
+    const simNetBurn = simOpex + simCogs - simRevenue
     // Simulated burn rate: blend current month with new netBurn
     const simBurnRate = simNetBurn > 0 ? simNetBurn : 0
-    const simRunway = simBurnRate > 0 ? business.cashOnHand / simBurnRate : 999
+    // A cash infusion is a one-time balance addition — it extends simulated runway
+    // without being counted as revenue (which would distort gross margin).
+    const simCashOnHand = business.cashOnHand + infusion
+    const simRunway = simBurnRate > 0 ? simCashOnHand / simBurnRate : 999
 
     // ── Risk score (simplified re-run of riskService rules) ───────
     const simRiskScore = computeSimRisk(simRunway, simNetBurn, simGrossMargin, snapshot.revenueVol)
 
     // ── Cash saved per month ──────────────────────────────────────
-    const cashSavedPerMonth = baseOpex - simOpex + (simRevenue - baseRevenue)
+    const cashSavedPerMonth = (baseOpex - simOpex) + (baseCogs - simCogs) + (simRevenue - baseRevenue)
 
     res.json({
       current: {

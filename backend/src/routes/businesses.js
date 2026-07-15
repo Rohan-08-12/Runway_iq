@@ -7,13 +7,19 @@ const { computeAndStoreSnapshots } = require('../services/metricsService')
 const router = express.Router()
 
 
+const BUSINESS_SELECT = {
+  id: true, name: true, cashOnHand: true, createdAt: true,
+  industry: true, fiscalYearStart: true,
+  alertRunway: true, alertBurn: true, alertCash: true, alertRevenue: true,
+}
+
 // GET /api/businesses — list all businesses for the authenticated user
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const businesses = await prisma.business.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, name: true, cashOnHand: true, createdAt: true },
+      select: BUSINESS_SELECT,
     })
     res.json(businesses)
   } catch (err) {
@@ -44,10 +50,10 @@ router.post('/', requireAuth, async (req, res, next) => {
   }
 })
 
-// PATCH /api/businesses/current — update name or cashOnHand for the user's business
+// PATCH /api/businesses/current — update profile fields / alert prefs for the user's business
 router.patch('/current', requireAuth, async (req, res, next) => {
   try {
-    const { name, cashOnHand } = req.body
+    const { name, cashOnHand, industry, fiscalYearStart, alertRunway, alertBurn, alertCash, alertRevenue } = req.body
     const data = {}
     if (name && typeof name === 'string' && name.trim().length > 0) {
       data.name = name.trim()
@@ -55,13 +61,22 @@ router.patch('/current', requireAuth, async (req, res, next) => {
     if (cashOnHand !== undefined) {
       data.cashOnHand = Math.max(0, Math.round(Number(cashOnHand) * 100))
     }
+    if (industry !== undefined) {
+      data.industry = typeof industry === 'string' ? industry.trim().slice(0, 200) : null
+    }
+    if (fiscalYearStart !== undefined) {
+      data.fiscalYearStart = typeof fiscalYearStart === 'string' ? fiscalYearStart.trim().slice(0, 50) : null
+    }
+    for (const [key, val] of Object.entries({ alertRunway, alertBurn, alertCash, alertRevenue })) {
+      if (typeof val === 'boolean') data[key] = val
+    }
     if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: 'Provide name or cashOnHand to update' })
+      return res.status(400).json({ error: 'No valid fields provided to update' })
     }
     const business = await prisma.business.update({
       where: { id: req.businessId },
       data,
-      select: { id: true, name: true, cashOnHand: true },
+      select: BUSINESS_SELECT,
     })
 
     // Recompute all snapshots so runway reflects the new cash balance
@@ -70,6 +85,16 @@ router.patch('/current', requireAuth, async (req, res, next) => {
     }
 
     res.json(business)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// DELETE /api/businesses/current — permanently delete the user's business and all its data
+router.delete('/current', requireAuth, async (req, res, next) => {
+  try {
+    await prisma.business.delete({ where: { id: req.businessId } })
+    res.status(204).end()
   } catch (err) {
     next(err)
   }
