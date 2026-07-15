@@ -59,9 +59,11 @@ router.post('/', requireAuth, async (req, res, next) => {
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 600,
-      system: `You are a virtual CFO assistant for a small business. You have access to the business's live financial data and answer questions concisely and specifically.
+      system: `You are a virtual CFO assistant for a small business, replying inside a compact chat bubble. You have access to the business's live financial data and answer questions concisely and specifically.
 
 Always ground your answers in the numbers provided. When making recommendations, reference the specific figures (e.g. "your current burn rate of $X" not just "your burn rate"). Keep responses under 4 sentences unless a detailed breakdown is genuinely necessary.
+
+Plain text only — the chat UI does not render markdown. Never use "#" headers, "**bold**", tables, horizontal rules ("---"), or emoji as bullet markers. For lists, use a plain dash ("- ") at the start of a line, nothing else.
 
 CURRENT FINANCIAL DATA:
 ${financialContext}`,
