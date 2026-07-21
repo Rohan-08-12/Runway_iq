@@ -22,6 +22,11 @@ const chatRouter = require('./routes/chat')
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Railway/Vercel sit behind a reverse proxy — trust the first hop's
+// X-Forwarded-For so req.ip and rate limiting key off the real client,
+// not the proxy (otherwise every user shares one IP-based bucket).
+app.set('trust proxy', 1)
+
 // 1. Security headers
 app.use(helmet())
 

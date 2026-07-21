@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma')
 const express = require('express')
+const rateLimit = require('express-rate-limit')
 const Anthropic = require('@anthropic-ai/sdk')
 
 const { requireAuth } = require('../middleware/auth')
@@ -11,6 +12,16 @@ const router = express.Router()
 
 const client = new Anthropic()
 const MODEL = 'claude-sonnet-4-6'
+
+// Rate limit on Claude API calls — 30 per hour per user
+const chatLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => req.user?.id || req.ip,
+  message: { error: 'Chat message limit reached. Try again in an hour.' },
+})
 
 /**
  * POST /api/chat
@@ -25,7 +36,7 @@ const MODEL = 'claude-sonnet-4-6'
  * Returns:
  *   { reply: string, conversationHistory: [...] }
  */
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, chatLimiter, async (req, res, next) => {
   try {
     const { message, conversationHistory = [], saveHistory = true } = req.body
 
