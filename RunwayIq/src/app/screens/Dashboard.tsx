@@ -3,7 +3,7 @@ import { ArrowRight, Upload, Send, RefreshCw, Loader2, Download } from 'lucide-r
 import { generateCFOReport } from '../../lib/generatePDF';
 import {
   api, MetricsResponse, RiskResponse, Report,
-  ForecastMonth, SimulateResponse, Business, ChatMessage,
+  ForecastMonth, SimulateResponse, Business, ChatMessage, UsageResponse,
 } from '../../lib/api';
 import { fmtMoney, fmtRunway, fmtDelta } from '../../lib/format';
 import { RiskRing } from '../components/RiskRing';
@@ -92,6 +92,7 @@ export function Dashboard() {
   const [forecast, setForecast] = useState<ForecastMonth[]>([]);
   const [business, setBusiness] = useState<Business | null>(null);
   const [simulate, setSimulate] = useState<SimulateResponse | null>(null);
+  const [usage, setUsage] = useState<UsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   // CSV upload state
@@ -122,18 +123,20 @@ export function Dashboard() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [m, r, rep, f, b] = await Promise.all([
+    const [m, r, rep, f, b, u] = await Promise.all([
       api.metrics.get().catch(() => null),
       api.risk.get().catch(() => null),
       api.report.latest().catch(() => null),
       api.forecast.get(3).catch(() => [] as ForecastMonth[]),
       api.businesses.get().catch(() => [] as Business[]),
+      api.usage.get().catch(() => null),
     ]);
     setMetrics(m);
     setRisk(r);
     setReport(rep);
     setForecast(f);
     setBusiness(b[0] ?? null);
+    setUsage(u);
     setLoading(false);
   }, []);
 
@@ -203,6 +206,7 @@ export function Dashboard() {
       setReportError(err instanceof Error ? err.message : 'Report generation failed');
     } finally {
       setGenerating(false);
+      api.usage.get().then(setUsage).catch(() => null);
     }
   }
 
@@ -216,6 +220,7 @@ export function Dashboard() {
   async function sendChat() {
     const msg = chatMsg.trim();
     if (!msg || chatLoading) return;
+    if (usage && usage.chat.remaining <= 0) return;
     setChatMsg('');
     const next: ChatMessage[] = [...chatHistory, { role: 'user', content: msg }];
     setChatHistory(next);
@@ -223,10 +228,12 @@ export function Dashboard() {
     try {
       const res = await api.chat.send(msg, chatHistory);
       setChatHistory(res.conversationHistory);
-    } catch {
-      setChatHistory([...next, { role: 'assistant', content: 'Unable to process that request right now.' }]);
+    } catch (err: unknown) {
+      const text = err instanceof Error ? err.message : 'Unable to process that request right now.';
+      setChatHistory([...next, { role: 'assistant', content: text }]);
     } finally {
       setChatLoading(false);
+      api.usage.get().then(setUsage).catch(() => null);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
   }
@@ -613,6 +620,11 @@ export function Dashboard() {
             RAG-grounded
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            {usage && (
+              <span className="text-[9px]" style={{ color: usage.reports.remaining <= 0 ? '#E24B4A' : '#9CA3AF' }}>
+                {usage.reports.remaining}/{usage.reports.limit} reports left today
+              </span>
+            )}
             {report && (
               <button
                 onClick={handleDownloadPDF}
@@ -626,7 +638,8 @@ export function Dashboard() {
             )}
             <button
               onClick={handleGenerateReport}
-              disabled={generating}
+              disabled={generating || (usage != null && usage.reports.remaining <= 0)}
+              title={usage && usage.reports.remaining <= 0 ? 'Daily report limit reached — resets at midnight UTC' : undefined}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[10px] disabled:opacity-60 transition-colors hover:bg-[#F9FAFB]"
               style={{ borderColor: '#E5E7EB', color: '#374151' }}
             >
@@ -680,7 +693,14 @@ export function Dashboard() {
 
       {/* ── Ask Your CFO ──────────────────────────────────────────────────── */}
       <Card className="pb-0 overflow-hidden">
-        <SectionLabel badge="NEW">Ask Your CFO</SectionLabel>
+        <div className="flex items-center justify-between mb-3">
+          <SectionLabel badge="NEW">Ask Your CFO</SectionLabel>
+          {usage && (
+            <span className="text-[9px] mb-3" style={{ color: usage.chat.remaining <= 0 ? '#E24B4A' : '#9CA3AF' }}>
+              {usage.chat.remaining}/{usage.chat.limit} messages left today
+            </span>
+          )}
+        </div>
 
         <div className="max-h-[220px] overflow-y-auto space-y-3 mb-3 pr-1">
           {chatHistory.length === 0 ? (
@@ -702,13 +722,14 @@ export function Dashboard() {
             value={chatMsg}
             onChange={e => setChatMsg(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && sendChat()}
-            placeholder="Ask anything about your finances..."
-            className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-[#1A56DB]"
+            disabled={usage != null && usage.chat.remaining <= 0}
+            placeholder={usage && usage.chat.remaining <= 0 ? 'Daily message limit reached — resets at midnight UTC' : 'Ask anything about your finances...'}
+            className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-[#1A56DB] disabled:opacity-60"
             style={{ color: '#374151' }}
           />
           <button
             onClick={sendChat}
-            disabled={chatLoading}
+            disabled={chatLoading || (usage != null && usage.chat.remaining <= 0)}
             className="px-4 py-2 rounded-md text-white flex items-center gap-1.5 disabled:opacity-60"
             style={{ backgroundColor: '#1A56DB' }}
           >

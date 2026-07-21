@@ -2,7 +2,7 @@ import { ChatBubble } from '../components/ChatBubble';
 import { Pill } from '../components/Pill';
 import { Send } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { api, ChatMessage, MetricsResponse } from '../../lib/api';
+import { api, ChatMessage, MetricsResponse, UsageResponse } from '../../lib/api';
 import { fmtMoney, fmtRunway } from '../../lib/format';
 
 const suggestedQuestions = [
@@ -18,16 +18,19 @@ export function Chat() {
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
+  const [usage, setUsage] = useState<UsageResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load chat history and financial context in parallel
+    // Load chat history, financial context, and usage quota in parallel
     Promise.all([
       api.chat.history().catch(() => [] as ChatMessage[]),
       api.metrics.get().catch(() => null),
-    ]).then(([hist, m]) => {
+      api.usage.get().catch(() => null),
+    ]).then(([hist, m, u]) => {
       setHistory(hist);
       setMetrics(m);
+      setUsage(u);
     });
   }, []);
 
@@ -38,6 +41,7 @@ export function Chat() {
   async function sendMessage() {
     const msg = message.trim();
     if (!msg || loading) return;
+    if (usage && usage.chat.remaining <= 0) return;
     setMessage('');
     const userMsg: ChatMessage = { role: 'user', content: msg };
     const updatedHistory = [...history, userMsg];
@@ -51,6 +55,7 @@ export function Chat() {
       setHistory([...updatedHistory, { role: 'assistant', content: `Sorry, I encountered an error: ${errMsg}` }]);
     } finally {
       setLoading(false);
+      api.usage.get().then(setUsage).catch(() => null);
     }
   }
 
@@ -121,7 +126,7 @@ export function Chat() {
         {/* Right Panel: Chat */}
         <div className="bg-white border-[0.5px] border-[#E5E7EB] rounded-[10px] flex flex-col order-1 lg:order-2 h-[75vh] lg:h-auto">
           {/* Header */}
-          <div className="border-b border-[#E5E7EB] p-4">
+          <div className="border-b border-[#E5E7EB] p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#059669]" />
               <div>
@@ -129,6 +134,11 @@ export function Chat() {
                 <div className="text-[9px]" style={{ color: '#9CA3AF' }}>AI-powered financial assistant · Claude</div>
               </div>
             </div>
+            {usage && (
+              <span className="text-[9px]" style={{ color: usage.chat.remaining <= 0 ? '#E24B4A' : '#9CA3AF' }}>
+                {usage.chat.remaining}/{usage.chat.limit} left today
+              </span>
+            )}
           </div>
 
           {/* Messages Area */}
@@ -197,8 +207,9 @@ export function Chat() {
                 type="text"
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                placeholder="Ask about your financials..."
-                className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-md text-[12px] focus:outline-none focus:ring-1 focus:ring-[#1A56DB]"
+                disabled={usage != null && usage.chat.remaining <= 0}
+                placeholder={usage && usage.chat.remaining <= 0 ? 'Daily message limit reached — resets at midnight UTC' : 'Ask about your financials...'}
+                className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-md text-[12px] focus:outline-none focus:ring-1 focus:ring-[#1A56DB] disabled:opacity-60"
                 style={{ color: '#374151' }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) sendMessage() }}
               />
@@ -206,7 +217,7 @@ export function Chat() {
                 className="px-4 h-[34px] rounded-md text-white flex items-center gap-2 disabled:opacity-60"
                 style={{ backgroundColor: '#1A56DB' }}
                 onClick={sendMessage}
-                disabled={loading}
+                disabled={loading || (usage != null && usage.chat.remaining <= 0)}
               >
                 <Send size={14} />
               </button>

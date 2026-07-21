@@ -177,6 +177,18 @@ export interface Business {
   alertRevenue: boolean
 }
 
+export interface UsageQuota {
+  used: number
+  limit: number
+  remaining: number
+}
+
+export interface UsageResponse {
+  reports: UsageQuota
+  chat: UsageQuota
+  resetsAt: string // ISO date string
+}
+
 // ─── API methods ──────────────────────────────────────────────────────────────
 
 export const api = {
@@ -232,5 +244,8 @@ export const api = {
   report: {
     latest: () => get<Report>('/report/latest'),
     generate: () => post<Report>('/report/generate', {}),
+  },
+  usage: {
+    get: () => get<UsageResponse>('/usage'),
   },
 }
