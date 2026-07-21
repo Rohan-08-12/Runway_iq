@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -33,12 +33,71 @@ export function Landing() {
   const navigate = useNavigate()
   const { session } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const goApp = () => navigate(session ? '/' : '/login')
   const goLogin = () => navigate('/login')
 
+  // GSAP is dynamically imported so it only downloads for visitors who
+  // actually load the landing page — it never bloats the authenticated
+  // app's bundle. Skipped entirely for prefers-reduced-motion.
+  useEffect(() => {
+    if (!rootRef.current) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let ctx: { revert: () => void } | undefined
+    let cancelled = false
+
+    import('gsap').then(async ({ default: gsap }) => {
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger')
+      if (cancelled || !rootRef.current) return
+      gsap.registerPlugin(ScrollTrigger)
+
+      ctx = gsap.context(() => {
+        // Hero — plays immediately on mount, above the fold
+        gsap.timeline({ defaults: { ease: 'power2.out', duration: 0.7 } })
+          .from('.hero-eyebrow', { opacity: 0, y: 16 })
+          .from('.hero-headline', { opacity: 0, y: 20 }, '-=0.5')
+          .from('.hero-subtext', { opacity: 0, y: 20 }, '-=0.5')
+          .from('.hero-actions', { opacity: 0, y: 20 }, '-=0.5')
+          .from('.hero-trust', { opacity: 0, y: 10 }, '-=0.45')
+          .from('.hero-preview', { opacity: 0, y: 40, scale: 0.97 }, '-=0.35')
+
+        // Section headers — simple fade+slide as they enter viewport
+        gsap.utils.toArray<HTMLElement>('.reveal').forEach(el => {
+          gsap.from(el, {
+            opacity: 0,
+            y: 24,
+            duration: 0.6,
+            ease: 'power2.out',
+            scrollTrigger: { trigger: el, start: 'top 85%' },
+          })
+        })
+
+        // Card grids — staggered entrance as the group enters viewport
+        gsap.utils.toArray<HTMLElement>('.reveal-stagger').forEach(group => {
+          const items = group.querySelectorAll(':scope > .stagger-item')
+          if (!items.length) return
+          gsap.from(items, {
+            opacity: 0,
+            y: 24,
+            duration: 0.55,
+            ease: 'power2.out',
+            stagger: 0.08,
+            scrollTrigger: { trigger: group, start: 'top 85%' },
+          })
+        })
+      }, rootRef)
+    })
+
+    return () => {
+      cancelled = true
+      ctx?.revert()
+    }
+  }, [])
+
   return (
-    <div className="min-h-screen bg-[#060609] text-zinc-300 antialiased" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div ref={rootRef} className="min-h-screen bg-[#060609] text-zinc-300 antialiased" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
       {/* ── 1. NAVBAR ─────────────────────────────────────────────────────── */}
       <header className="fixed top-0 inset-x-0 z-50 border-b border-white/[0.06] bg-[#060609]/80 backdrop-blur-xl">
@@ -102,12 +161,12 @@ export function Landing() {
         </div>
 
         <div className="relative max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.04] text-[12px] text-zinc-300 mb-8">
+          <div className="hero-eyebrow inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.04] text-[12px] text-zinc-300 mb-8">
             <Zap size={12} className="text-indigo-400" />
             CSV in. CFO-grade analysis out — in seconds.
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-[64px] font-bold text-white leading-[1.06] tracking-[-0.03em] max-w-4xl mx-auto">
+          <h1 className="hero-headline text-4xl sm:text-5xl lg:text-[64px] font-bold text-white leading-[1.06] tracking-[-0.03em] max-w-4xl mx-auto">
             Know your runway.
             <br />
             <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-300 bg-clip-text text-transparent">
@@ -115,13 +174,13 @@ export function Landing() {
             </span>
           </h1>
 
-          <p className="mt-6 text-[16px] sm:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed">
+          <p className="hero-subtext mt-6 text-[16px] sm:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed">
             RunwayIQ is your AI-powered virtual CFO. Upload your transactions and a
             3-agent Claude pipeline delivers burn rate, runway, forecasts, and a
             board-ready action plan — no accountant required.
           </p>
 
-          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="hero-actions mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={goApp}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[15px] font-semibold transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5"
@@ -137,7 +196,7 @@ export function Landing() {
             </a>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-zinc-500">
+          <div className="hero-trust mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-zinc-500">
             <span>No credit card required</span>
             <span className="w-1 h-1 rounded-full bg-zinc-700 hidden sm:block" />
             <span>Free plan forever</span>
@@ -146,7 +205,7 @@ export function Landing() {
           </div>
 
           {/* Product glimpse */}
-          <div className="relative mt-16 max-w-3xl mx-auto">
+          <div className="hero-preview relative mt-16 max-w-3xl mx-auto">
             <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-indigo-500/40 to-transparent" />
             <div className="relative rounded-2xl border border-white/10 bg-[#0B0B12] p-5 sm:p-6 text-left shadow-2xl shadow-black/60">
               <div className="flex items-center justify-between mb-5">
@@ -188,7 +247,7 @@ export function Landing() {
       {/* ── 3. PROBLEM ────────────────────────────────────────────────────── */}
       <section id="problem" className="px-5 py-24 border-t border-white/[0.04]">
         <div className="max-w-6xl mx-auto">
-          <div className="max-w-2xl">
+          <div className="reveal max-w-2xl">
             <SectionEyebrow>The problem</SectionEyebrow>
             <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
               Stop guessing your runway.
@@ -200,7 +259,7 @@ export function Landing() {
             </p>
           </div>
 
-          <div className="mt-12 grid sm:grid-cols-3 gap-4">
+          <div className="reveal-stagger mt-12 grid sm:grid-cols-3 gap-4">
             {[
               {
                 icon: <HelpCircle size={18} className="text-amber-400" />,
@@ -218,7 +277,7 @@ export function Landing() {
                 desc: 'Hiring, pricing, fundraising timing — the biggest calls get made without modeling what they do to your cash.',
               },
             ].map(p => (
-              <div key={p.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 hover:border-white/[0.12] transition-colors">
+              <div key={p.title} className="stagger-item rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 hover:border-white/[0.12] transition-colors">
                 <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
                   {p.icon}
                 </div>
@@ -234,7 +293,7 @@ export function Landing() {
       <section id="features" className="px-5 py-24 border-t border-white/[0.04] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[400px] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
         <div className="relative max-w-6xl mx-auto">
-          <div className="max-w-2xl">
+          <div className="reveal max-w-2xl">
             <SectionEyebrow>Features</SectionEyebrow>
             <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
               Everything a CFO would tell you.
@@ -243,7 +302,7 @@ export function Landing() {
             </h2>
           </div>
 
-          <div className="mt-12 grid sm:grid-cols-2 gap-4">
+          <div className="reveal-stagger mt-12 grid sm:grid-cols-2 gap-4">
             {[
               {
                 icon: <LineChart size={20} />,
@@ -270,7 +329,7 @@ export function Landing() {
                 desc: 'A 3-agent AI pipeline — Analyst, Strategist, CFO Writer — produces a risk-scored report with three prioritized actions. Export to PDF and send it to your board as-is.',
               },
             ].map(f => (
-              <div key={f.title} className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 hover:border-indigo-500/30 hover:bg-white/[0.03] transition-all">
+              <div key={f.title} className="stagger-item group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 hover:border-indigo-500/30 hover:bg-white/[0.03] transition-all">
                 <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${f.iconBg} flex items-center justify-center text-white mb-5 shadow-lg`}>
                   {f.icon}
                 </div>
@@ -285,14 +344,14 @@ export function Landing() {
       {/* ── 5. HOW IT WORKS ───────────────────────────────────────────────── */}
       <section id="how" className="px-5 py-24 border-t border-white/[0.04]">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto">
+          <div className="reveal text-center max-w-2xl mx-auto">
             <SectionEyebrow>How it works</SectionEyebrow>
             <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
               From CSV to clarity in three steps
             </h2>
           </div>
 
-          <div className="mt-14 grid sm:grid-cols-3 gap-4 sm:gap-6 relative">
+          <div className="reveal-stagger mt-14 grid sm:grid-cols-3 gap-4 sm:gap-6 relative">
             {/* connector line (desktop) */}
             <div className="hidden sm:block absolute top-[27px] left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 
@@ -316,7 +375,7 @@ export function Landing() {
                 desc: 'Get your runway, risk score, forecast, and three prioritized actions. Simulate scenarios, chat with your CFO, export the PDF.',
               },
             ].map(s => (
-              <div key={s.n} className="relative text-center sm:text-left">
+              <div key={s.n} className="stagger-item relative text-center sm:text-left">
                 <div className="relative z-10 mx-auto sm:mx-0 w-[54px] h-[54px] rounded-2xl bg-[#0D0D15] border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-lg shadow-indigo-950/50">
                   {s.icon}
                 </div>
@@ -333,7 +392,7 @@ export function Landing() {
       <section id="pricing" className="px-5 py-24 border-t border-white/[0.04] relative overflow-hidden">
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[300px] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
         <div className="relative max-w-4xl mx-auto">
-          <div className="text-center max-w-xl mx-auto">
+          <div className="reveal text-center max-w-xl mx-auto">
             <SectionEyebrow>Pricing</SectionEyebrow>
             <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
               Start free. Upgrade when you're ready.
@@ -341,9 +400,9 @@ export function Landing() {
             <p className="mt-4 text-[14px] text-zinc-500">No credit card required to start.</p>
           </div>
 
-          <div className="mt-12 grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+          <div className="reveal-stagger mt-12 grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {/* Free */}
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 flex flex-col">
+            <div className="stagger-item rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 flex flex-col">
               <div className="text-[12px] font-bold uppercase tracking-widest text-zinc-400">Free</div>
               <div className="mt-3 flex items-baseline gap-1.5">
                 <span className="text-4xl font-bold text-white">$0</span>
@@ -370,7 +429,7 @@ export function Landing() {
             </div>
 
             {/* Pro */}
-            <div className="relative rounded-2xl border border-indigo-500/40 bg-gradient-to-b from-indigo-500/[0.08] to-white/[0.02] p-8 flex flex-col shadow-2xl shadow-indigo-950/40">
+            <div className="stagger-item relative rounded-2xl border border-indigo-500/40 bg-gradient-to-b from-indigo-500/[0.08] to-white/[0.02] p-8 flex flex-col shadow-2xl shadow-indigo-950/40">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-indigo-600 text-white text-[10px] font-bold tracking-widest uppercase shadow-lg shadow-indigo-600/40">
                 Most popular
               </div>
@@ -408,7 +467,7 @@ export function Landing() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute bottom-[-200px] left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-indigo-600/25 blur-[140px]" />
         </div>
-        <div className="relative max-w-3xl mx-auto text-center">
+        <div className="reveal relative max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight leading-tight">
             Your runway won't
             <br />
