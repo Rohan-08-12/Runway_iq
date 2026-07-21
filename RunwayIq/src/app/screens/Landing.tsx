@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   Upload, LineChart, SlidersHorizontal, MessageCircle,
@@ -354,7 +354,7 @@ export function Landing() {
               </p>
               <div className="my-6 h-px bg-white/[0.06]" />
               <ul className="space-y-3 flex-1">
-                {['3 AI CFO reports / month', 'CSV upload up to 5,000 rows', 'All 10 live financial metrics', 'Risk score + 3-month forecast', 'What-if simulator'].map(f => (
+                {['5 AI CFO reports / hour', 'CSV upload up to 5,000 rows', 'All 10 live financial metrics', 'Risk score + 3-month forecast', 'What-if simulator'].map(f => (
                   <li key={f} className="flex items-start gap-2.5 text-[13px] text-zinc-400">
                     <Check size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                     {f}
@@ -457,8 +457,12 @@ export function Landing() {
               </div>
             </div>
           </div>
-          <div className="mt-12 pt-6 border-t border-white/[0.04] text-[11px] text-zinc-700">
-            © 2026 RunwayIQ. Built at Hack Canada 2026.
+          <div className="mt-12 pt-6 border-t border-white/[0.04] flex flex-wrap items-center justify-between gap-3 text-[11px] text-zinc-700">
+            <span>© 2026 RunwayIQ. Built at Hack Canada 2026.</span>
+            <div className="flex items-center gap-4">
+              <Link to="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
+              <Link to="/terms" className="hover:text-zinc-400 transition-colors">Terms</Link>
+            </div>
           </div>
         </div>
       </footer>
