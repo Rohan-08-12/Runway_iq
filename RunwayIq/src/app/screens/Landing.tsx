@@ -63,14 +63,19 @@ export function Landing() {
           .from('.hero-trust', { opacity: 0, y: 10 }, '-=0.45')
           .from('.hero-preview', { opacity: 0, y: 40, scale: 0.97 }, '-=0.35')
 
-        // Section headers — simple fade+slide as they enter viewport
+        // Section headers — simple fade+slide as they enter viewport.
+        // `once: true` + a generous start point + immediateRender:false
+        // means these only ever hide content once GSAP is confirmed
+        // ready to reveal it — never stuck invisible if a trigger
+        // recalculation is off by a bit.
         gsap.utils.toArray<HTMLElement>('.reveal').forEach(el => {
           gsap.from(el, {
             opacity: 0,
             y: 24,
             duration: 0.6,
             ease: 'power2.out',
-            scrollTrigger: { trigger: el, start: 'top 85%' },
+            immediateRender: false,
+            scrollTrigger: { trigger: el, start: 'top 90%', once: true },
           })
         })
 
@@ -84,10 +89,25 @@ export function Landing() {
             duration: 0.55,
             ease: 'power2.out',
             stagger: 0.08,
-            scrollTrigger: { trigger: group, start: 'top 85%' },
+            immediateRender: false,
+            scrollTrigger: { trigger: group, start: 'top 90%', once: true },
           })
         })
       }, rootRef)
+
+      // Section positions are calculated once, right after mount. If web
+      // fonts (DM Sans, loaded async) swap in afterward, the page reflows
+      // and every trigger's pixel position shifts — recalculate once
+      // things have actually settled so nothing gets stuck at opacity 0.
+      const refresh = () => ScrollTrigger.refresh()
+      if (document.fonts?.ready) document.fonts.ready.then(refresh)
+      window.addEventListener('load', refresh)
+      const settleTimer = setTimeout(refresh, 1000)
+
+      return () => {
+        window.removeEventListener('load', refresh)
+        clearTimeout(settleTimer)
+      }
     })
 
     return () => {
