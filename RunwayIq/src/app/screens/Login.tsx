@@ -1,29 +1,46 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
 
 export function Login() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+
+  // Navigate only once AuthContext's session actually updates — navigating
+  // right after signIn/signUp resolves can race the context's async
+  // onAuthStateChange subscription and bounce back to the landing page
+  // before it registers as signed in.
+  useEffect(() => {
+    if (session) navigate('/', { replace: true })
+  }, [session, navigate])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    setInfo(null)
     setLoading(true)
 
     try {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
+        // useEffect above navigates once the session updates
       } else {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
+        if (!data.session) {
+          // Email confirmation required — no session yet, nothing to redirect to
+          setInfo('Check your email to confirm your account, then sign in.')
+        }
+        // if a session came back immediately, useEffect handles navigation
       }
-      navigate('/')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Authentication failed')
     } finally {
@@ -93,6 +110,15 @@ export function Login() {
                 style={{ backgroundColor: '#FFF5F5', color: '#E24B4A', border: '1px solid #FCA5A5' }}
               >
                 {error}
+              </div>
+            )}
+
+            {info && (
+              <div
+                className="px-3 py-2 rounded-md text-[11px]"
+                style={{ backgroundColor: '#EFF6FF', color: '#1A56DB', border: '1px solid #BFDBFE' }}
+              >
+                {info}
               </div>
             )}
 
