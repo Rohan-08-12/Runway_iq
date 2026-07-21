@@ -1,28 +1,37 @@
 const prisma = require('../lib/prisma')
 const express = require('express')
-const rateLimit = require('express-rate-limit')
 
 const { generateReport } = require('../services/aiService')
 const { requireAuth } = require('../middleware/auth')
+const { checkAndIncrementUsage, refundUsage } = require('../services/usageService')
 
 const router = express.Router()
 
 
-// Tight rate limit on Claude API calls — 5 per hour per user
-const reportLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: req => req.user?.id || req.ip,
-  message: { error: 'Report generation limit reached. Try again in an hour.' },
-})
-
 // POST /api/report/generate
-router.post('/generate', requireAuth, reportLimiter, async (req, res, next) => {
+// Daily quota (5/day/business, persisted in the DB — survives restarts,
+// unlike the old in-memory hourly limiter) guards spend on the 3-agent
+// Claude pipeline.
+router.post('/generate', requireAuth, async (req, res, next) => {
   try {
     const businessId = req.businessId // from JWT via requireAuth
-    const report = await generateReport(businessId)
+
+    const usage = await checkAndIncrementUsage(businessId, 'reports')
+    if (!usage.allowed) {
+      return res.status(429).json({
+        error: `Daily report limit reached (${usage.limit}/day). Resets at midnight UTC.`,
+        usage,
+      })
+    }
+
+    let report
+    try {
+      report = await generateReport(businessId)
+    } catch (genErr) {
+      // Don't charge the daily quota for a generation that failed
+      await refundUsage(businessId, 'reports')
+      throw genErr
+    }
     res.json(report)
   } catch (err) {
     next(err)

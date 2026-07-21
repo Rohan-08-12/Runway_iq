@@ -1,27 +1,17 @@
 const prisma = require('../lib/prisma')
 const express = require('express')
-const rateLimit = require('express-rate-limit')
 const Anthropic = require('@anthropic-ai/sdk')
 
 const { requireAuth } = require('../middleware/auth')
 const metricsService = require('../services/metricsService')
 const forecastService = require('../services/forecastService')
 const riskService = require('../services/riskService')
+const { checkAndIncrementUsage, refundUsage } = require('../services/usageService')
 
 const router = express.Router()
 
 const client = new Anthropic()
 const MODEL = 'claude-sonnet-4-6'
-
-// Rate limit on Claude API calls — 30 per hour per user
-const chatLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: req => req.user?.id || req.ip,
-  message: { error: 'Chat message limit reached. Try again in an hour.' },
-})
 
 /**
  * POST /api/chat
@@ -36,7 +26,7 @@ const chatLimiter = rateLimit({
  * Returns:
  *   { reply: string, conversationHistory: [...] }
  */
-router.post('/', requireAuth, chatLimiter, async (req, res, next) => {
+router.post('/', requireAuth, async (req, res, next) => {
   try {
     const { message, conversationHistory = [], saveHistory = true } = req.body
 
@@ -48,6 +38,17 @@ router.post('/', requireAuth, chatLimiter, async (req, res, next) => {
     }
 
     const businessId = req.businessId
+
+    // Daily quota (20/day/business, persisted in the DB) guards spend on
+    // the Claude API — checked after basic validation so malformed
+    // requests don't burn quota.
+    const usage = await checkAndIncrementUsage(businessId, 'chat')
+    if (!usage.allowed) {
+      return res.status(429).json({
+        error: `Daily chat limit reached (${usage.limit}/day). Resets at midnight UTC.`,
+        usage,
+      })
+    }
 
     // Build live financial context
     const business = await prisma.business.findUnique({ where: { id: businessId } })
@@ -67,10 +68,12 @@ router.post('/', requireAuth, chatLimiter, async (req, res, next) => {
 
     history.push({ role: 'user', content: message.trim() })
 
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 600,
-      system: `You are a virtual CFO assistant for a small business, replying inside a compact chat bubble. You have access to the business's live financial data and answer questions concisely and specifically.
+    let response
+    try {
+      response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 600,
+        system: `You are a virtual CFO assistant for a small business, replying inside a compact chat bubble. You have access to the business's live financial data and answer questions concisely and specifically.
 
 Always ground your answers in the numbers provided. When making recommendations, reference the specific figures (e.g. "your current burn rate of $X" not just "your burn rate"). Keep responses under 4 sentences unless a detailed breakdown is genuinely necessary.
 
@@ -78,8 +81,13 @@ Plain text only — the chat UI does not render markdown. Never use "#" headers,
 
 CURRENT FINANCIAL DATA:
 ${financialContext}`,
-      messages: history,
-    })
+        messages: history,
+      })
+    } catch (genErr) {
+      // Don't charge the daily quota for a call that failed
+      await refundUsage(businessId, 'chat')
+      throw genErr
+    }
 
     const reply = response.content[0].text.trim()
 

@@ -18,6 +18,9 @@ model Business {
   alertBurn       Boolean           @default(true)
   alertCash       Boolean           @default(false)
   alertRevenue    Boolean           @default(true)
+  reportsUsedToday  Int             @default(0)
+  chatMsgsUsedToday Int             @default(0)
+  usageDate         DateTime?
   createdAt       DateTime          @default(now())
   transactions    Transaction[]
   snapshots       MonthlySnapshot[]

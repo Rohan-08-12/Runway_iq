@@ -18,6 +18,7 @@ const reportRouter = require('./routes/report')
 const businessesRouter = require('./routes/businesses')
 const simulateRouter = require('./routes/simulate')
 const chatRouter = require('./routes/chat')
+const usageRouter = require('./routes/usage')
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -70,6 +71,7 @@ app.use('/api/report', reportRouter)
 app.use('/api/businesses', businessesRouter)
 app.use('/api/simulate', simulateRouter)
 app.use('/api/chat', chatRouter)
+app.use('/api/usage', usageRouter)
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }))
 
