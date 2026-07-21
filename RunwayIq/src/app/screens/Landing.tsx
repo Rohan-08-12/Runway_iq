@@ -354,7 +354,7 @@ export function Landing() {
               </p>
               <div className="my-6 h-px bg-white/[0.06]" />
               <ul className="space-y-3 flex-1">
-                {['5 AI CFO reports / hour', 'CSV upload up to 5,000 rows', 'All 10 live financial metrics', 'Risk score + 3-month forecast', 'What-if simulator'].map(f => (
+                {['5 AI CFO reports / day', '20 CFO chat messages / day', 'CSV upload up to 5,000 rows', 'All 10 live financial metrics', 'Risk score + 3-month forecast', 'What-if simulator'].map(f => (
                   <li key={f} className="flex items-start gap-2.5 text-[13px] text-zinc-400">
                     <Check size={15} className="text-emerald-400 shrink-0 mt-0.5" />
                     {f}
@@ -384,7 +384,7 @@ export function Landing() {
               </p>
               <div className="my-6 h-px bg-white/[0.06]" />
               <ul className="space-y-3 flex-1">
-                {['Unlimited AI CFO reports', 'Everything in Free', 'Ask Your CFO chat with saved history', 'Board-ready PDF export', 'Priority support'].map(f => (
+                {['Unlimited AI CFO reports', 'Unlimited CFO chat', 'Everything in Free', 'Board-ready PDF export', 'Priority support'].map(f => (
                   <li key={f} className="flex items-start gap-2.5 text-[13px] text-zinc-300">
                     <Check size={15} className="text-indigo-400 shrink-0 mt-0.5" />
                     {f}
