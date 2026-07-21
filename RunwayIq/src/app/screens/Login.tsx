@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -157,6 +157,14 @@ export function Login() {
               </>
             )}
           </div>
+
+          {mode === 'signup' && (
+            <div className="mt-3 text-center text-[10px]" style={{ color: '#9CA3AF' }}>
+              By creating an account you agree to our{' '}
+              <Link to="/terms" className="underline">Terms</Link> and{' '}
+              <Link to="/privacy" className="underline">Privacy Policy</Link>.
+            </div>
+          )}
         </div>
       </div>
     </div>

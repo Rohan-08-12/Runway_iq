@@ -8,6 +8,7 @@ import { Chat } from './screens/Chat'
 import { Settings } from './screens/Settings'
 import { Login } from './screens/Login'
 import { Landing } from './screens/Landing'
+import { Terms, Privacy } from './screens/Legal'
 import { useAuth } from '../contexts/AuthContext'
 
 // "/" is the landing page for logged-out visitors and the app shell for
@@ -30,6 +31,14 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     Component: Login,
+  },
+  {
+    path: '/terms',
+    Component: Terms,
+  },
+  {
+    path: '/privacy',
+    Component: Privacy,
   },
   {
     path: '/',
