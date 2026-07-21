@@ -127,6 +127,8 @@ RUNWAYIQ/
 
 Deeper docs live in [`/docs`](./docs): [setup & troubleshooting](./docs/SETUP.md), [architecture](./docs/ARCHITECTURE.md), and [deployment](./docs/DEPLOYMENT.md). API reference is in [`backend/README.md`](./backend/README.md#api-endpoints).
 
+Want to contribute? See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the branch/PR workflow.
+
 ---
 
 ## Getting Started
