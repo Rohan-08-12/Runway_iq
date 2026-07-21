@@ -1,17 +1,23 @@
 import { useState, FormEvent, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router'
+import { LogIn, UserPlus } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+
+const MIN_PASSWORD_LENGTH = 6
 
 export function Login() {
   const navigate = useNavigate()
   const { session } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+
+  const accent = mode === 'signin' ? '#1A56DB' : '#059669'
 
   // Navigate only once AuthContext's session actually updates — navigating
   // right after signIn/signUp resolves can race the context's async
@@ -21,12 +27,30 @@ export function Login() {
     if (session) navigate('/', { replace: true })
   }, [session, navigate])
 
+  function switchMode(next: 'signin' | 'signup') {
+    setMode(next)
+    setError(null)
+    setInfo(null)
+    setConfirmPassword('')
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setInfo(null)
-    setLoading(true)
 
+    if (mode === 'signup') {
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.')
+        return
+      }
+    }
+
+    setLoading(true)
     try {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -54,8 +78,8 @@ export function Login() {
         {/* Logo / Brand */}
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] mb-3"
-            style={{ backgroundColor: '#1A56DB' }}
+            className="inline-flex items-center justify-center w-10 h-10 rounded-[10px] mb-3 transition-colors"
+            style={{ backgroundColor: accent }}
           >
             <span className="text-white text-[16px]" style={{ fontWeight: 700 }}>R</span>
           </div>
@@ -67,10 +91,39 @@ export function Login() {
           </div>
         </div>
 
+        {/* Mode switcher */}
+        <div className="flex rounded-lg border border-[#E5E7EB] p-1 mb-4" style={{ backgroundColor: '#F3F4F6' }}>
+          <button
+            type="button"
+            onClick={() => switchMode('signin')}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[12px] transition-colors"
+            style={mode === 'signin'
+              ? { backgroundColor: '#fff', color: '#1A56DB', fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }
+              : { color: '#9CA3AF', fontWeight: 500 }}
+          >
+            <LogIn size={13} />
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('signup')}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-[12px] transition-colors"
+            style={mode === 'signup'
+              ? { backgroundColor: '#fff', color: '#059669', fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }
+              : { color: '#9CA3AF', fontWeight: 500 }}
+          >
+            <UserPlus size={13} />
+            Sign Up
+          </button>
+        </div>
+
         {/* Card */}
-        <div className="bg-white border-[0.5px] border-[#E5E7EB] rounded-[10px] p-6">
-          <div className="text-[14px] mb-5" style={{ color: '#374151', fontWeight: 500 }}>
-            {mode === 'signin' ? 'Sign in to your account' : 'Create an account'}
+        <div className="bg-white border-[0.5px] rounded-[10px] p-6 transition-colors" style={{ borderColor: '#E5E7EB', borderTopColor: accent, borderTopWidth: '2px' }}>
+          <div className="flex items-center gap-2 mb-5">
+            {mode === 'signin' ? <LogIn size={16} style={{ color: accent }} /> : <UserPlus size={16} style={{ color: accent }} />}
+            <div className="text-[14px]" style={{ color: '#374151', fontWeight: 500 }}>
+              {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,8 +137,8 @@ export function Login() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md text-[12px] focus:outline-none focus:ring-1 focus:ring-[#1A56DB]"
-                style={{ color: '#374151' }}
+                className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md text-[12px] focus:outline-none focus:ring-1"
+                style={{ color: '#374151', '--tw-ring-color': accent } as React.CSSProperties}
               />
             </div>
 
@@ -96,13 +149,46 @@ export function Login() {
               <input
                 type="password"
                 required
+                minLength={mode === 'signup' ? MIN_PASSWORD_LENGTH : undefined}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md text-[12px] focus:outline-none focus:ring-1 focus:ring-[#1A56DB]"
-                style={{ color: '#374151' }}
+                className="w-full px-3 py-2 border border-[#E5E7EB] rounded-md text-[12px] focus:outline-none focus:ring-1"
+                style={{ color: '#374151', '--tw-ring-color': accent } as React.CSSProperties}
               />
+              {mode === 'signup' && (
+                <div className="mt-1 text-[10px]" style={{ color: '#9CA3AF' }}>
+                  At least {MIN_PASSWORD_LENGTH} characters
+                </div>
+              )}
             </div>
+
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-[11px] mb-1.5" style={{ color: '#374151', fontWeight: 500 }}>
+                  Confirm password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={MIN_PASSWORD_LENGTH}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 border rounded-md text-[12px] focus:outline-none focus:ring-1"
+                  style={{
+                    color: '#374151',
+                    borderColor: confirmPassword && confirmPassword !== password ? '#FCA5A5' : '#E5E7EB',
+                    '--tw-ring-color': accent,
+                  } as React.CSSProperties}
+                />
+                {confirmPassword && confirmPassword !== password && (
+                  <div className="mt-1 text-[10px]" style={{ color: '#E24B4A' }}>
+                    Passwords don't match
+                  </div>
+                )}
+              </div>
+            )}
 
             {error && (
               <div
@@ -125,38 +211,12 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 rounded-md text-white text-[12px] transition-opacity disabled:opacity-60"
-              style={{ backgroundColor: '#1A56DB', fontWeight: 500 }}
+              className="w-full py-2 rounded-md text-white text-[12px] transition-colors disabled:opacity-60"
+              style={{ backgroundColor: accent, fontWeight: 500 }}
             >
               {loading ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
-
-          <div className="mt-4 text-center text-[11px]" style={{ color: '#9CA3AF' }}>
-            {mode === 'signin' ? (
-              <>
-                Don't have an account?{' '}
-                <button
-                  onClick={() => { setMode('signup'); setError(null) }}
-                  className="underline"
-                  style={{ color: '#1A56DB' }}
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button
-                  onClick={() => { setMode('signin'); setError(null) }}
-                  className="underline"
-                  style={{ color: '#1A56DB' }}
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
 
           {mode === 'signup' && (
             <div className="mt-3 text-center text-[10px]" style={{ color: '#9CA3AF' }}>
