@@ -471,7 +471,7 @@ export function Landing() {
                 ))}
               </ul>
               <a
-                href="mailto:hello@runwayiq.app?subject=RunwayIQ%20Pro"
+                href="mailto:rohannayyer8@gmail.com?subject=RunwayIQ%20Pro"
                 className="mt-8 w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[14px] font-semibold transition-colors text-center shadow-lg shadow-indigo-600/30"
               >
                 Get Pro
@@ -532,7 +532,7 @@ export function Landing() {
                 <a href="https://github.com/Rohan-08-12/Runway_iq#readme" target="_blank" rel="noreferrer" className="block text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">Documentation</a>
                 <a href="https://github.com/Rohan-08-12/Runway_iq/blob/master/backend/README.md#api-endpoints" target="_blank" rel="noreferrer" className="block text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">API reference</a>
                 <a href="https://github.com/Rohan-08-12/Runway_iq" target="_blank" rel="noreferrer" className="block text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">GitHub</a>
-                <a href="mailto:hello@runwayiq.app" className="block text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">Contact</a>
+                <a href="mailto:rohannayyer8@gmail.com" className="block text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">Contact</a>
               </div>
             </div>
           </div>
