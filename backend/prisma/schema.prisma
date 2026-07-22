@@ -9,7 +9,7 @@ datasource db {
 
 model Business {
   id              String            @id @default(uuid())
-  userId          String
+  userId          String            @unique
   name            String
   cashOnHand      Int               @default(0)
   industry        String?
@@ -26,8 +26,6 @@ model Business {
   snapshots       MonthlySnapshot[]
   reports         AIReport[]
   messages        ChatMessage[]
-
-  @@index([userId])
 }
 
 model ChatMessage {
