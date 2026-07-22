@@ -88,8 +88,12 @@ export function Settings() {
     }
   }
 
+  const deleteConfirmMatches = business
+    ? deleteConfirmText.trim().toLowerCase() === business.name.trim().toLowerCase()
+    : false;
+
   async function handleDeleteAccount() {
-    if (!business || deleteConfirmText !== business.name) return;
+    if (!business || !deleteConfirmMatches) return;
     setDeleting(true);
     setDeleteError(null);
     try {
@@ -414,7 +418,7 @@ export function Settings() {
 
                     <button
                       onClick={handleDeleteAccount}
-                      disabled={deleting || deleteConfirmText !== business.name}
+                      disabled={deleting || !deleteConfirmMatches}
                       className="px-4 py-2 rounded-md text-[11px] disabled:opacity-50 flex items-center gap-2"
                       style={{ backgroundColor: '#FEE2E2', color: '#991B1B', fontWeight: 500 }}
                     >
