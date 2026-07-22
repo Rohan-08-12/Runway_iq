@@ -22,7 +22,7 @@ function LegalShell({ title, updated, children }: { title: string; updated: stri
         </div>
 
         <div className="mt-14 pt-6 border-t border-white/[0.06] text-[12px] text-zinc-600">
-          Questions? Email <a href="mailto:hello@runwayiq.app" className="text-indigo-400 hover:text-indigo-300">hello@runwayiq.app</a>.
+          Questions? Email <a href="mailto:rohannayyer8@gmail.com" className="text-indigo-400 hover:text-indigo-300">rohannayyer8@gmail.com</a>.
         </div>
       </div>
     </div>
