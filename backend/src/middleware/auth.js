@@ -38,30 +38,20 @@ async function requireAuth(req, res, next) {
         return res.status(403).json({ error: 'Business not found or access denied' })
       }
     } else {
-      business = await prisma.business.findFirst({
+      // Upsert on the unique userId — atomic, so concurrent first-login
+      // requests can't race and create duplicate businesses for one user.
+      const emailName = (user.email || '').split('@')[0] || 'My Business'
+      const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
+      business = await prisma.business.upsert({
         where: { userId: user.id },
-        orderBy: { createdAt: 'asc' },
+        update: {},
+        create: {
+          userId: user.id,
+          name: displayName,
+          cashOnHand: 0,
+        },
         select: { id: true },
       })
-      // Auto-create a business on first login — no seed required
-      if (!business) {
-        const emailName = (user.email || '').split('@')[0] || 'My Business'
-        const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1)
-        business = await prisma.business.create({
-          data: {
-            userId: user.id,
-            name: displayName,
-            cashOnHand: 0,
-          },
-          select: { id: true },
-        })
-        console.log(JSON.stringify({
-          event: 'business_auto_created',
-          userId: user.id,
-          businessId: business.id,
-          ts: new Date().toISOString(),
-        }))
-      }
     }
 
     // 4. Attach to req — routes use req.businessId, never req.body/query
